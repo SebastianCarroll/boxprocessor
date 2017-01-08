@@ -26,7 +26,7 @@ import com.box.sdk.BoxUser;
 public final class Main {
 
     // developer token expires in an hour
-    private static final String DEVELOPER_TOKEN = "L8vdpeyghwEMnlSwN3St3vapWak0BzFt";
+    private static final String DEVELOPER_TOKEN = "mUEfOECFZ0KtDreJCnH5OVMOWxiOu4SD";
     private static final int MAX_DEPTH = 1;
 
     private Main() { }
@@ -44,89 +44,94 @@ public final class Main {
         //        listFolder(rootFolder, 0);
 
         BoxFile file = null;
-        BoxFolder folder = new BoxFolder(api, "15296958056");
-        for (BoxItem.Info itemInfo : folder) {
-            if (itemInfo instanceof BoxFile.Info) {
-                BoxFile.Info fileInfo = (BoxFile.Info) itemInfo;
-                // Do something with the file.
-                System.out.println("File:" + fileInfo.getCreatedAt() + "," +
-                        fileInfo.getDescription() + "," +
-                        fileInfo.getExtension() + ",name=" + 
-                        fileInfo.getName() + ",id=" + 
-                        fileInfo.getID() + "," +
-                        fileInfo.getCreatedBy() + "," + 
-                        fileInfo.getSize() + "," + 
-                        fileInfo.getVersion().getName() + "," + 
-                        fileInfo.getCreatedAt() + "," + 
-                        fileInfo.getModifiedAt() + "," + 
-                        fileInfo.getModifiedBy() + 
-                        "");
+        BoxFolder folder = new BoxFolder(api, "16169135715");
+
+        try {
+            for (BoxItem.Info itemInfo : folder) {
+                if (itemInfo instanceof BoxFile.Info) {
+                    BoxFile.Info fileInfo = (BoxFile.Info) itemInfo;
+                    // Do something with the file.
+                    System.out.println("File:" + fileInfo.getCreatedAt() + "," +
+                            fileInfo.getDescription() + "," +
+                            fileInfo.getExtension() + ",name=" +
+                            fileInfo.getName() + ",id=" +
+                            fileInfo.getID() + "," +
+                            fileInfo.getCreatedBy() + "," +
+                            fileInfo.getSize() + "," +
+                            fileInfo.getVersion().getName() + "," +
+                            fileInfo.getCreatedAt() + "," +
+                            fileInfo.getModifiedAt() + "," +
+                            fileInfo.getModifiedBy() +
+                            "");
 
 
-                // download all the pdfs
-                if ( fileInfo.getName() != null && fileInfo.getID() != null && fileInfo.getName().endsWith(".pdf")) {
-                    file = new BoxFile(api, fileInfo.getID());
-                    FileOutputStream stream = null;
-                    try {
-                        stream = new FileOutputStream(fileInfo.getName());
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
+                    // download all the pdfs
+                    if (fileInfo.getName() != null && fileInfo.getID() != null && fileInfo.getName().endsWith(".pdf")) {
+                        file = new BoxFile(api, fileInfo.getID());
+                        FileOutputStream stream = null;
+                        try {
+                            stream = new FileOutputStream(fileInfo.getName());
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                        file.download(stream);
+
+                        //Input stream for the file in local file system to be written to HDFS
+                        InputStream in = null;
+                        try {
+                            in = new BufferedInputStream(new FileInputStream(fileInfo.getName()));
+                        } catch (FileNotFoundException e1) {
+                            e1.printStackTrace();
+                        }
+
+                        try {
+                            //                        Path pt=new Path("hdfs://enterprise:8020/box/" + fileInfo.getName());
+
+                            System.out.println("Save to HDFS " + fileInfo.getName());
+
+
+                            //                        FileSystem fs = FileSystem.get(new Configuration());
+                            //                        file.download(fs.create(pt,true));
+                            //                        fs.close();
+
+                            //Destination file in HDFS
+                            Configuration conf = new Configuration();
+                            System.out.println("Connecting to -- " + conf.get("fs.defaultFS"));
+                            String dst = "hdfs://yourserver:8020/box/" + fileInfo.getName();
+
+                            FileSystem fs = FileSystem.get(URI.create(dst), conf);
+                            OutputStream out = fs.create(new Path(dst));
+
+                            //Copy file from local to HDFS
+                            IOUtils.copyBytes(in, out, 4096, true);
+
+                            java.nio.file.Path path = FileSystems.getDefault().getPath(fileInfo.getName());
+                            Files.delete(path);
+
+                            //                        BufferedWriter br=new BufferedWriter(new OutputStreamWriter(fs.create(pt,true)));
+                            //                                                   // TO append data to a file, use fs.append(Path f)
+                            //                        String line;
+                            //                        line="This file was created by a java program.";
+                            //                        System.out.println(line);
+                            //                        br.write(line);
+                            //                        br.close();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            System.out.println("File not found");
+                        }
+
+                        //                	try {
+                        //						stream.close();
+                        //					} catch (IOException e) {
+                        //						e.printStackTrace();
+                        //					}
                     }
-                    file.download(stream);
-
-                    //Input stream for the file in local file system to be written to HDFS
-                    InputStream in = null;
-                    try {
-                        in = new BufferedInputStream(new FileInputStream(fileInfo.getName()));
-                    } catch (FileNotFoundException e1) {
-                        e1.printStackTrace();
-                    }
-
-                    try{
-                        //                        Path pt=new Path("hdfs://enterprise:8020/box/" + fileInfo.getName());
-
-                        System.out.println("Save to HDFS " + fileInfo.getName());
-
-
-
-                        //                        FileSystem fs = FileSystem.get(new Configuration());
-                        //                        file.download(fs.create(pt,true));
-                        //                        fs.close();
-
-                        //Destination file in HDFS
-                        Configuration conf = new Configuration();
-                        System.out.println("Connecting to -- "+conf.get("fs.defaultFS"));
-                        String dst = "hdfs://yourserver:8020/box/" + fileInfo.getName();
-
-                        FileSystem fs = FileSystem.get(URI.create(dst), conf);
-                        OutputStream out = fs.create(new Path(dst));
-
-                        //Copy file from local to HDFS
-                        IOUtils.copyBytes(in, out, 4096, true);
-
-                        java.nio.file.Path path = FileSystems.getDefault().getPath(fileInfo.getName());                     
-                        Files.delete(path);
-
-                        //                        BufferedWriter br=new BufferedWriter(new OutputStreamWriter(fs.create(pt,true)));
-                        //                                                   // TO append data to a file, use fs.append(Path f)
-                        //                        String line;
-                        //                        line="This file was created by a java program.";
-                        //                        System.out.println(line);
-                        //                        br.write(line);
-                        //                        br.close();
-                    }catch(Exception e){
-                        e.printStackTrace();
-                        System.out.println("File not found");
-                    }
-
-                    //                	try {
-                    //						stream.close();
-                    //					} catch (IOException e) {
-                    //						e.printStackTrace();
-                    //					}
-                }               
-            } 
-        }        
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Folder not found");
+        }
     }
 
     private static void listFolder(BoxFolder folder, int depth) {
