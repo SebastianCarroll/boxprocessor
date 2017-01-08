@@ -11,6 +11,8 @@ application.*
 .mtj.tmp/
 deploy.sh
 *.pem
+.idea/
+*.iml
 
 # Package Files #
 *.jar
